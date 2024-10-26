@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" href="logo.png" type="image/x-icon">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PicME! - Draw on Photo</title>
+  <style>
+    body {
+     font-family: 'Pacifico', cursive; 
+      text-align: center;
+      background-color: #ffe3f2;
+      color: #333;
+    }
+
+    h1 {
+      color: #e75480;
+      font-family: 'Pacifico', cursive; /* Change font family to Pacifico */
+      font-size: 3em;
+    }
+
+    .editor {
+      max-width: 600px;
+      margin: 20px auto;
+      background: #ffccdf;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .controls {
+      margin: 10px 0;
+    }
+
+    input[type="range"], input[type="color"] {
+      margin: 5px 0;
+      background-color: #ffcce6;
+    }
+
+    .download-button {
+      margin-top: 15px;
+      padding: 10px 20px;
+      background-color: #e75480;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    canvas {
+      border: 2px solid #e75480;
+      border-radius: 8px;
+      background-color: white; /* Optional: make the canvas background white */
+    }
+  </style>
+</head>
+<body>
+
+  <h1>PicME! - Draw on Photo</h1>
+  <div class="editor">
+    <canvas id="canvas"></canvas>
+
+    <div class="controls">
+      <label>Brush Color</label>
+      <input type="color" id="brushColor" value="#000000">
+    </div>
+    <div class="controls">
+      <label>Brush Size</label>
+      <input type="range" id="brushSize" min="1" max="20" value="5">
+    </div>
+
+    <button class="download-button" id="download">Download Edited Image</button>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const downloadBtn = document.getElementById('download');
+    let img = new Image();
+    let drawing = false;
+
+    window.onload = () => {
+      const dataURL = localStorage.getItem('editedImage');
+      if (dataURL) {
+        img.src = dataURL;
+        img.onload = () => {
+          // Calculate the aspect ratio
+          const aspectRatio = img.width / img.height;
+
+          // Set max dimensions
+          const maxWidth = 600; // You can adjust this
+          const maxHeight = 400; // You can adjust this
+
+          // Resize image based on aspect ratio
+          if (img.width > maxWidth || img.height > maxHeight) {
+            if (aspectRatio > 1) { // Wider than tall
+              img.width = maxWidth;
+              img.height = maxWidth / aspectRatio;
+            } else { // Taller than wide
+              img.height = maxHeight;
+              img.width = maxHeight * aspectRatio;
+            }
+          }
+
+          // Set canvas size and draw image
+          canvas.width = img.width;
+          canvas.height = img.height;
+          ctx.drawImage(img, 0, 0, img.width, img.height);
+        };
+      } else {
+        alert('No image found. Please go back and edit a photo first.');
+      }
+    };
+
+    // Function to get mouse position relative to canvas
+    function getMousePos(evt) {
+      const rect = canvas.getBoundingClientRect();
+      return {
+        x: evt.clientX - rect.left,
+        y: evt.clientY - rect.top
+      };
+    }
+
+    canvas.addEventListener('mousedown', (e) => {
+      drawing = true;
+      ctx.beginPath();
+      const pos = getMousePos(e);
+      ctx.moveTo(pos.x, pos.y);
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+      if (drawing) {
+        const pos = getMousePos(e);
+        ctx.lineWidth = document.getElementById('brushSize').value;
+        ctx.strokeStyle = document.getElementById('brushColor').value;
+        ctx.lineTo(pos.x, pos.y);
+        ctx.stroke();
+      }
+    });
+
+    canvas.addEventListener('mouseup', () => {
+      drawing = false;
+      ctx.closePath();
+    });
+
+    canvas.addEventListener('mouseout', () => {
+      drawing = false;
+      ctx.closePath();
+    });
+
+    downloadBtn.addEventListener('click', () => {
+      const link = document.createElement('a');
+      link.download = 'final-image.png';
+      link.href = canvas.toDataURL('image/png', 1.0); // High quality
+      link.click();
+    });
+  </script>
+
+</body>
+</html>

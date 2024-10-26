@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" href="logo.png" type="image/x-icon">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PicME! - Photo Editor</title>
+  <style>
+    body {
+     font-family: 'Pacifico', cursive; 
+      text-align: center;
+      background-color: #ffe3f2;
+      color: #333;
+    }
+
+    h1 {
+      color: #e75480;
+      font-family: 'Pacifico', cursive; /* Change font family to Pacifico */
+      font-size: 3em;
+    }
+
+    .editor {
+      max-width: 600px;
+      margin: 20px auto;
+      background: #ffccdf;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .controls {
+      margin: 10px 0;
+    }
+
+    input[type="range"], input[type="checkbox"] {
+      margin: 5px 0;
+      background-color: #ffcce6;
+    }
+
+    .download-button, .draw-button {
+      margin-top: 15px;
+      padding: 10px 20px;
+      background-color: #e75480;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    canvas {
+      width: 100%;
+      border: 2px solid #e75480;
+      border-radius: 8px;
+      image-rendering: pixelated; /* Enhance quality */
+    }
+  </style>
+</head>
+<body>
+
+  <h1>PicME! - Photo Editor</h1>
+  <div class="editor">
+    <input type="file" id="upload" accept="image/*" capture="environment">
+    <canvas id="canvas"></canvas>
+
+    <div class="controls">
+      <label>Brightness</label>
+      <input type="range" id="brightness" min="0" max="200" value="100">
+    </div>
+    <div class="controls">
+      <label>Contrast</label>
+      <input type="range" id="contrast" min="0" max="200" value="100">
+    </div>
+    <div class="controls">
+      <label>Saturation</label>
+      <input type="range" id="saturation" min="0" max="200" value="100">
+    </div>
+    <div class="controls">
+      <label>Sepia</label>
+      <input type="range" id="sepia" min="0" max="100" value="0">
+    </div>
+    <div class="controls">
+      <label>Invert Colors</label>
+      <input type="checkbox" id="invert">
+    </div>
+
+    <button class="download-button" id="download">Download Edited Image</button>
+    <button class="draw-button" id="draw">Draw!</button>
+  </div>
+
+  <script>
+    const upload = document.getElementById('upload');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const downloadBtn = document.getElementById('download');
+    const drawBtn = document.getElementById('draw');
+    let img = new Image();
+    const maxDimension = 800; // Increased maximum dimension for better quality
+
+    upload.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        img.src = event.target.result;
+        img.onload = () => {
+          let width = img.width;
+          let height = img.height;
+          
+          if (width > maxDimension || height > maxDimension) {
+            const aspectRatio = width / height;
+            if (aspectRatio > 1) {
+              width = maxDimension;
+              height = maxDimension / aspectRatio;
+            } else {
+              height = maxDimension;
+              width = maxDimension * aspectRatio;
+            }
+          }
+
+          // Set canvas dimensions based on the original image size for quality
+          canvas.width = img.width;
+          canvas.height = img.height;
+          ctx.drawImage(img, 0, 0, img.width, img.height);
+        };
+      };
+      reader.readAsDataURL(file);
+    });
+
+    function applyFilters() {
+      const brightness = document.getElementById('brightness').value;
+      const contrast = document.getElementById('contrast').value;
+      const saturation = document.getElementById('saturation').value;
+      const sepia = document.getElementById('sepia').value;
+      const invert = document.getElementById('invert').checked ? 'invert(100%)' : 'invert(0%)';
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.filter = `
+        brightness(${brightness}%) 
+        contrast(${contrast}%) 
+        saturate(${saturation}%) 
+        sepia(${sepia}%)
+        ${invert}
+      `;
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      ctx.filter = 'none';
+    }
+
+    document.getElementById('brightness').addEventListener('input', applyFilters);
+    document.getElementById('contrast').addEventListener('input', applyFilters);
+    document.getElementById('saturation').addEventListener('input', applyFilters);
+    document.getElementById('sepia').addEventListener('input', applyFilters);
+    document.getElementById('invert').addEventListener('change', applyFilters);
+
+    downloadBtn.addEventListener('click', () => {
+      const link = document.createElement('a');
+      link.download = 'edited-image.png';
+      link.href = canvas.toDataURL('image/png', 1.0); // High quality
+      link.click();
+    });
+
+    drawBtn.addEventListener('click', () => {
+      const dataURL = canvas.toDataURL('image/png', 1.0); // High quality
+      localStorage.setItem('editedImage', dataURL);
+      window.location.href = 'draw.html';
+    });
+  </script>
+
+</body>
+</html>
